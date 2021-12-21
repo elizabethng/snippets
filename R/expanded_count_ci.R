@@ -1,6 +1,6 @@
 # Check CIs
 
-# In repsonse to email from Sam about calculating 95% CIs for expanded counts
+# In response to email from Sam about calculating 95% CIs for expanded counts
 # from fish counting, for comparison to the DNN cam. 
 
 library("tidyverse")
@@ -55,6 +55,8 @@ simres <- simdat %>%
   )
 
 ggplot(simres, aes(x = true_mean, y = coverage_rate)) +
-  geom_point()
+  geom_point() +
+  geom_hline(aes(yintercept = 95), color = "grey") +
+  theme_bw()
 
 

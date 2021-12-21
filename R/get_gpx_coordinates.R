@@ -10,5 +10,3 @@ dat <- mydat %>%
 
 dat$lon <- st_coordinates(dat)[,1]
 dat$lat <- st_coordinates(dat)[,2]
-
-write_csv(dat, "C:/Users/ElizabethNg/Downloads/coords.csv")

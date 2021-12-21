@@ -45,3 +45,4 @@ car::Anova(mod1, type = "III")
 # (no interaction) and full model (with interaction):
 anova(mod1, mod0, test = "LRT")
 # Confirms that the interaction term is not significant at the 0.05 level. 
+

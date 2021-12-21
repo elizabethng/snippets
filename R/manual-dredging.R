@@ -1,5 +1,8 @@
 # Manual model selection example (logistic regression)
 
+library("tidyverse")
+
+mdat <- NULL
 
 # Helper functions
 mod_fun <- function(formula){

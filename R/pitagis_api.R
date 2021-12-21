@@ -2,6 +2,8 @@
 # instructions: https://www.dataquest.io/blog/r-api-tutorial/
 # PITAGIS API structure: https://api.ptagis.org/swagger/ui/index
 
+# NOTE: API is primarily for data input, not querying
+
 library("httr")
 library("tidyverse")
 library("jsonlite")
