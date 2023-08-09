@@ -55,6 +55,14 @@ tab <- out %>%
   autofit()
 tab  
 
+# Save the table as a Word Document
+read_docx() %>%
+  body_add_par("This is my table") %>%
+  body_add_par("\n") %>% # add white space
+  body_add_par("\n") %>%
+  body_add_flextable(value = tab) %>% # add the table
+  print(target = here("output", "my_table.docx")) # fp for saving
+
 
 # Scratch work for more complicated approach
 # pivot_wider(names_from = `Number of cylinders`, 
