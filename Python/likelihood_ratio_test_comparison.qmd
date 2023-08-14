@@ -1,0 +1,235 @@
+---
+title: "Likelihood Ratio Tests"
+format: html
+editor: visual
+---
+
+## Preliminaries
+
+```{r}
+library("reticulate") # for running python
+library("tidyverse")
+
+# set which python version to use https://rstudio.github.io/reticulate/articles/versions.html
+reticulate::use_condaenv(condaenv = "viz")
+```
+
+```{python}
+import pandas as pd
+from scipy import stats # for LR test
+import statsmodels.formula.api as smf # for logistic regression
+```
+
+
+Start by simulating some fake data to use.
+
+```{r}
+# Simulate observed adult returns and calculate observed SAR 
+set.seed(333)  
+
+sumdat <- tibble(   
+  group = c("spring", "fall", "summer"),   
+  sar_true = c(0.013, 0.020, 0.015), # SAR as a proportion   
+  smolt = c(10000, 20000, 30000)     # number smolts that outmigrated 
+)  %>%   
+  mutate(
+    adult = rbinom(group, size = smolt, prob = sar_true), # do simulation
+    sar_obs = adult/smolt
+  )
+  
+# Expand to match collected data
+dat <- sumdat %>%
+  select(group, smolt, adult) %>%
+  mutate(
+    returned = map2(
+      adult, smolt, ~ tibble(returned = c(rep(1, .x), rep(0, .y - .x)))
+    )
+  ) %>%
+  unnest(returned) %>%
+  select(-smolt, -adult)
+dat
+```
+
+Save new data to use in Python chunks below.
+
+```{r}
+write_csv(dat, "data.csv")
+```
+
+## Logistic Regression in R
+
+Fit logistic regression models. Fit full and reduced models to compare. Here, test for the effect of season.
+
+### Season Model
+
+```{r}
+mod_season <- glm(returned ~ group, data = dat, family = binomial(link = "logit"))
+summary(mod_season)
+
+```
+
+### Full Model
+
+```{r}
+mod_null <- glm(returned ~ 1, data = dat, family = binomial(link = "logit"))
+summary(mod_null)
+```
+
+## Logistic Regression in Python
+
+Let's try using the `statsmodels` package, since we know `scikit-learn` has different design objectives.
+
+Import the saved data set.
+
+```{python}
+dat = pd.read_csv("data.csv")
+```
+
+### Season Model
+
+Set up the first model for season.
+
+```{python}
+mod_season = smf.logit("returned ~ group", data = dat).fit()
+mod_season.summary()
+```
+
+### Null Model
+
+Set up the null model for comparison.
+
+```{python}
+mod_null = smf.logit("returned ~ 1", data = dat).fit()
+mod_null.summary()
+```
+
+
+## Likelihood Ratio Test in R
+
+Next, conduct a likelihood ratio test for significance of group effect.
+
+```{r}
+lrt <- anova(mod_null, mod_season, test = "LRT")
+lrt
+```
+
+
+## Likelihood Ratio Test in Python
+
+Perform the likelihood ratio test. I don't think there is a built-in function to compare GLMs with likelihood ratio test, so we have to do them manually.
+
+```{python}
+def likelihood_ratio_test(full, reduced):
+  # log likelihoods
+  llf_full = full.llf
+  llf_red = reduced.llf
+  
+  # degrees of freedom
+  df = reduced.df_resid - full.df_resid
+  
+  # test statistic and p-value
+  test_stat = -2*(llf_red - llf_full)
+  pvalue = stats.chi2.sf(test_stat, df = df)
+  
+  return [{"p-value": pvalue, "test stat": test_stat, "df":df}]
+```
+
+Use the function to do the LR test. 
+```{python}
+likelihood_ratio_test(mod_season, mod_null)
+```
+For comparison
+```{r}
+c(lrt$`Pr(>Chi)`[2], lrt$Deviance[2], lrt$Df[2])
+```
+
+
+## Comparison of Model Estimates
+
+Quickly compare the coefficient estimates (conveniently the built-in functions for converting categorical variables to indicator variables use the same ordering)
+
+### Coefficients
+
+For the season models:
+
+```{r}
+coef(mod_season)
+```
+
+```{python}
+mod_season.params
+```
+
+For the null models:
+
+```{r}
+coef(mod_null)
+```
+
+```{python}
+mod_null.params
+```
+
+### Variance Estimates
+
+Now compare the variance estimates.
+
+```{r}
+vcov(mod_season)
+```
+
+```{python}
+# print(dir(mod_season)) check availaible attributes and methods
+mod_season.cov_params()
+```
+
+### AIC
+
+Check AIC
+
+```{r}
+mod_season$aic
+```
+
+```{python}
+mod_season.aic
+```
+
+Great! So far looks good.
+
+### Confidence Intervals
+
+What about confidence intervals?
+
+R's `confint` function does profile likelihood intervals
+
+```{r}
+confint(mod_season)
+```
+
+Compare standard normal based.
+
+```{r}
+ci <- 1.96*sqrt(diag(vcov(mod_season)))
+cbind(coef(mod_season) - ci, coef(mod_season) + ci)
+```
+
+According to the documentation, `statsmodels.genmod.generalized_linear_model.GLMResults.conf_int` computes confidence intervals based on the standard normal distribution, which checks out with the calculations above (and given how fast they are computed).
+
+```{python}
+mod_season.conf_int()
+```
+
+## Resources
+
+Some helpful links
+
+-   https://www.andrewvillazon.com/logistic-regression-python-statsmodels/
+
+-   https://www.statsmodels.org/stable/generated/statsmodels.formula.api.logit.html
+
+-   https://patsy.readthedocs.io/en/latest/categorical-coding.html
+
+-   http://www.science.smith.edu/\~jcrouser/SDS293/labs/lab4-py.html
+
+-   https://stackoverflow.com/questions/71641050/fitting-of-glm-with-statsmodels
