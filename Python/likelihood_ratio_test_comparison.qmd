@@ -20,7 +20,6 @@ from scipy import stats # for LR test
 import statsmodels.formula.api as smf # for logistic regression
 ```
 
-
 Start by simulating some fake data to use.
 
 ```{r}
@@ -103,7 +102,6 @@ mod_null = smf.logit("returned ~ 1", data = dat).fit()
 mod_null.summary()
 ```
 
-
 ## Likelihood Ratio Test in R
 
 Next, conduct a likelihood ratio test for significance of group effect.
@@ -112,7 +110,6 @@ Next, conduct a likelihood ratio test for significance of group effect.
 lrt <- anova(mod_null, mod_season, test = "LRT")
 lrt
 ```
-
 
 ## Likelihood Ratio Test in Python
 
@@ -134,15 +131,17 @@ def likelihood_ratio_test(full, reduced):
   return [{"p-value": pvalue, "test stat": test_stat, "df":df}]
 ```
 
-Use the function to do the LR test. 
+Use the function to do the LR test.
+
 ```{python}
 likelihood_ratio_test(mod_season, mod_null)
 ```
+
 For comparison
+
 ```{r}
 c(lrt$`Pr(>Chi)`[2], lrt$Deviance[2], lrt$Df[2])
 ```
-
 
 ## Comparison of Model Estimates
 

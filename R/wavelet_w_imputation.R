@@ -63,7 +63,6 @@ imp_comp %>%
 # (obviously normally won't know truth to pick best)
 
 mydata <- data.frame(t = 1:1000, x = xts_km)
-  
 
 # 03. Wavelet Analysis ----------------------------------------------------
 # Do wavelet analysis
