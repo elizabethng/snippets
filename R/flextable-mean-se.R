@@ -7,7 +7,7 @@ library("flextable")
 
 set.seed(9384)
 
-# 0. Make an example wide data set
+# 0. Make an example long data set
 dat <- tibble(
   group = LETTERS[1:4],
   mean = 10*1:4,
@@ -21,7 +21,7 @@ dat <- tibble(
     se = abs(rnorm(n(), se, 1))
   )
 
-# 1. Format the data into desired wide forma
+# 1. Format the data into desired wide format
 # Found that it helps to add the additional step of pivoting longer first
 tabdat <- dat %>%
   pivot_longer(
